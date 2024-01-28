@@ -1,0 +1,40 @@
+{
+  "VarAssign": {
+    "name": "{ class: identifier, value: age, index: [1, 5] }",
+    "value": {
+      "BooleanExpr": {
+        "lhs": {
+          "Literal": {
+            "value": "{ class: number, value: 17, index: [1, 11] }"
+          }
+        },
+        "rhs": {
+          "BooleanExpr": {
+            "lhs": {
+              "Literal": {
+                "value": "{ class: number, value: 12, index: [1, 17] }"
+              }
+            },
+            "rhs": {
+              "BooleanExpr": {
+                "lhs": {
+                  "Literal": {
+                    "value": "{ class: number, value: 12, index: [1, 23] }"
+                  }
+                },
+                "rhs": {
+                  "Literal": {
+                    "value": "{ class: boolean, value: true, index: [1, 29] }"
+                  }
+                },
+                "operator": "{ class: comparator, value: ==, index: [1, 26] }"
+              }
+            },
+            "operator": "{ class: comparator, value: ==, index: [1, 20] }"
+          }
+        },
+        "operator": "{ class: comparator, value: ==, index: [1, 14] }"
+      }
+    }
+  }
+}
