@@ -20,6 +20,8 @@ const SYNTAX: &[&[&str]] = &[
    &["{string}"], &["{number}"], &["{identifier}"],
    &["[", "{expression}", "]"],
    &["{expression}", "{comparator}", "{expression}"],
+   &["(", "{arguments}", ")"],
+   &["{name}", "(", "{arguments}", ")"],
 ];
 
 pub struct Parser {
@@ -109,6 +111,11 @@ impl Parser {
          Class::Number => { self.next(); Expression::Literal { value: cur } },
          Class::Boolean => { self.next(); Expression::Literal { value: cur } },
 
+         Class::Identifier => { match self.nth(1).class {
+            Class::LeftParen => self.collect_fun_call(parent),
+            _ => { self.error("expected '(' after identifier", self.fmt([14, 1])); Expression::Null }
+         } }
+
          _ => {
             self.error(&format!("expected expression, found {}", cur.class), self.fmt(parent));
 
@@ -156,6 +163,42 @@ impl Parser {
       let rhs = self.collect_expression([12, 2]);
 
       Expression::BooleanExpr { lhs: Box::from(lhs), rhs: Box::from(rhs), operator }
+   }
+   fn collect_arguments(&mut self, parent: [usize; 2]) -> Vec<Expression> {
+      let mut args = vec![]; 
+      let mut comma = true;
+
+
+      self.next(); loop {
+         let cur = self.cur();
+
+         match cur.class {
+            Class::Eof => {
+               self.error("expected ']' to finish array parsing but foudn '\\0'", self.fmt([13,2]));
+               return vec![];
+            },
+            Class::RightParen => {
+               self.next(); break;
+            },
+            Class::Comma => { comma = true; self.next(); },
+            _ if comma => {
+               comma = false;
+               args.push(self.collect_expression(parent));
+            },
+            _ => {
+               self.error(&format!("expected ',' before another expression but found {}", cur.class), self.fmt([13, 1]));
+               return vec![];
+            }
+         }
+      }
+
+      return args;
+   }
+   fn collect_fun_call(&mut self, parent: [usize; 2]) -> Expression {
+      let name = self.eat(Class::Identifier, [14, 0]);
+      let args = self.collect_arguments(parent);
+
+      return Expression::FunCall { name, args }
    }
 
    pub fn scan_for_statements(&mut self) -> Vec<Statement> {

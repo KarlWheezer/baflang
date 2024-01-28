@@ -24,6 +24,7 @@ pub enum Expression {
    Array { value: Vec<Self> },
    BooleanExpr { lhs: Box<Expression>, rhs: Box<Expression>, operator: Token },
    Null,
+   FunCall { name: Token, args: Vec<Expression> },
 }
 
 impl Display for Expression {
