@@ -9,6 +9,7 @@ pub enum Statement {
    SetAssign { name: Token, value: Expression },
    VarAssign { name: Token, value: Expression },
    IfStatement { boolean: Expression, block: Vec<Statement> },
+   FunCall { name: Token, args: Vec<Expression> },
    Void
 }
 
@@ -23,8 +24,8 @@ pub enum Expression {
    Literal { value: Token },
    Array { value: Vec<Self> },
    BooleanExpr { lhs: Box<Expression>, rhs: Box<Expression>, operator: Token },
-   Null,
    FunCall { name: Token, args: Vec<Expression> },
+   Null,
 }
 
 impl Display for Expression {

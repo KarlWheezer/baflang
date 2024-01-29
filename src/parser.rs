@@ -21,7 +21,7 @@ const SYNTAX: &[&[&str]] = &[
    &["[", "{expression}", "]"],
    &["{expression}", "{comparator}", "{expression}"],
    &["(", "{arguments}", ")"],
-   &["{name}", "(", "{arguments}", ")"],
+   &["{name}", "(", "{arguments}", ")", ";"],
 ];
 
 pub struct Parser {
@@ -220,6 +220,10 @@ impl Parser {
                todo!("not yet implimented - {}", cur)
             },
          },
+         Class::Identifier => match self.nth(1).class {
+            Class::LeftParen => self.scan_fun_call(),
+            _ => todo!("not yet implimented - {}", cur)
+         },
          _ => Statement::Void,
       };
 
@@ -258,7 +262,13 @@ impl Parser {
 
       Statement::VarAssign { name, value }
    }
+   fn scan_fun_call(&mut self) -> Statement {
+      let name = self.eat(Class::Identifier, [14, 0]);
+      let args = self.collect_arguments([14,2]);
+      self.eat(Class::Semi, [14, 4]);
 
+      return Statement::FunCall { name, args }
+   }
    fn scan_for_if(&mut self) -> Statement {
       self.next();
       let boolean = self.collect_expression([1,1]);
