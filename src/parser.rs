@@ -5,8 +5,8 @@ use crate::util::{Colorize, Split};
 
 
 const SYNTAX: &[&[&str]] = &[
-   &["fun", "{name}", "(", "{args}", ")", "->", "{yeild-type}", "[", "...", "]"],
-   &["if", "{boolean-expr}", "[", "...", "]"],
+   &["fun", "{name}", "(", "{args}", ")", "->", "{yeild-type}", "{", "...", "}"],
+   &["if", "{boolean-expr}", "{", "...", "}"],
    
    &["set", "{name}", "=", "{expr}", ";"],
    &["var", "{name}", "=", "{expr}", ";"],
@@ -22,6 +22,8 @@ const SYNTAX: &[&[&str]] = &[
    &["{expression}", "{comparator}", "{expression}"],
    &["(", "{arguments}", ")"],
    &["{name}", "(", "{arguments}", ")", ";"],
+   &["{type}", "[", "]"],
+   &["{name}", ":", "{type}"]
 ];
 
 pub struct Parser {
@@ -80,7 +82,7 @@ impl Parser {
       buf = line.clone();
 
       for _ in 0..cur.index[0].to_string().len()
-         { buf.push(' '); } buf.push_str("| ");
+         { buf.push(' '); } buf.push_str("|");
       for _ in 1..cur.index[1] 
          { buf.push(' '); } buf.push('^');
       for _ in 1..cur.value.len()
@@ -200,6 +202,12 @@ impl Parser {
 
       return Expression::FunCall { name, args }
    }
+   fn collect_type(&mut self) -> Expression {
+      let value = self.eat(Class::Identifier, [15,0]);
+      println!("{}", self.cur());
+
+      Expression::Type { value, is_array: 0 }
+   }
 
    pub fn scan_for_statements(&mut self) -> Vec<Statement> {
       let mut statements = vec![];
@@ -216,6 +224,7 @@ impl Parser {
             "set" => self.scan_set_assign(),
             "var" => self.scan_var_assign(),
             "if" => self.scan_for_if(),
+            "fun" => self.scan_for_fundef(),
             _ => {
                todo!("not yet implimented - {}", cur)
             },
@@ -230,12 +239,12 @@ impl Parser {
       return statement;
    }
 
-   fn scan_code_block(&mut self) -> Vec<Statement> {
-      self.eat(Class::LeftBrace, [12, 0]);
+   fn scan_code_block(&mut self, parent: [usize; 2]) -> Vec<Statement> {
+      self.eat(Class::LeftBrack, parent);
       let mut statements = vec![];
-      while self.cur().class != Class::RightBrace {
+      while self.cur().class != Class::RightBrack {
          if self.cur().class == Class::Eof {
-            self.error("unexpected end-of-file, wanted ']' for closing code block", self.fmt([12,0]));
+            self.error("unexpected end-of-file, wanted '}' for closing code block", self.fmt([parent[0], parent[1]+2]));
             break;
          }
 
@@ -272,8 +281,53 @@ impl Parser {
    fn scan_for_if(&mut self) -> Statement {
       self.next();
       let boolean = self.collect_expression([1,1]);
-      let block = self.scan_code_block();
+      let block = self.scan_code_block([1, 3]);
 
       Statement::IfStatement { boolean, block }
+   }
+   fn scan_for_fundef_args(&mut self) -> Vec<Expression> {
+      let mut args = vec![]; 
+      let mut comma = true;
+      self.eat(Class::LeftParen, [0, 2]);
+ 
+      loop {
+         let cur = self.cur();
+
+         match cur.class {
+            Class::Eof => {
+               self.error("expected ')' to finish fun-def arguments parsing but foudn '\\0'", self.fmt([0,2]));
+               return vec![];
+            },
+            Class::RightParen => {
+               self.next(); break;
+            },
+            Class::Comma => { comma = true; self.next(); },
+            _ if comma => {
+               comma = false;
+               let name = self.eat(Class::Identifier, [16, 0]);
+               self.eat(Class::Colon, [16,1]);
+               let class = self.collect_type();
+
+               args.push(Expression::Argument { name, class: Box::new(class) })
+            },
+            _ => {
+               self.error(&format!("expected ',' before another argument but found {}", cur.class), self.fmt([0, 3]));
+               return vec![];
+            }
+         }
+      }
+
+      return args;
+   }
+   fn scan_for_fundef(&mut self) -> Statement {
+      self.next();
+      let name = self.eat(Class::Identifier, [0, 1]);
+      let args = self.scan_for_fundef_args();
+      self.eat(Class::Arrow, [0, 5]);
+      let yeild = self.collect_type();
+      println!("{}", self.cur());
+      let block = self.scan_code_block([0, 7]);
+
+      Statement::FunDef { name, args, yeild, block }
    }
 }

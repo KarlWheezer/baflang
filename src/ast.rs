@@ -10,6 +10,7 @@ pub enum Statement {
    VarAssign { name: Token, value: Expression },
    IfStatement { boolean: Expression, block: Vec<Statement> },
    FunCall { name: Token, args: Vec<Expression> },
+   FunDef { name: Token, args: Vec<Expression>, yeild: Expression, block: Vec<Statement> },
    Void
 }
 
@@ -25,6 +26,8 @@ pub enum Expression {
    Array { value: Vec<Self> },
    BooleanExpr { lhs: Box<Expression>, rhs: Box<Expression>, operator: Token },
    FunCall { name: Token, args: Vec<Expression> },
+   Type { value: Token, is_array: usize },
+   Argument { name: Token, class: Box<Expression> },
    Null,
 }
 
